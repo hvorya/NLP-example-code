@@ -1,0 +1,90 @@
+import pandas as pd
+import numpy as np
+import re
+import gzip
+import json
+from nltk.classify import NaiveBayesClassifier
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk.corpus import subjectivity
+from nltk.parse import stanford
+from nltk.sentiment import SentimentAnalyzer
+from nltk.sentiment.util import *
+from nltk import word_tokenize, pos_tag,punkt
+import nltk
+from nltk import word_tokenize
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.downloader.download('vader_lexicon')
+pd.set_option('display.max_columns', None)
+helptext=[]
+nonhelptext=[]
+#################################################################Tokenizing
+def T(newlist):
+        all_pos=[]
+        for i in newlist:
+            for j in i:
+                sentences = nltk.sent_tokenize(j)
+                words = [nltk.word_tokenize(sent) for sent in sentences]
+                part_speach = [nltk.pos_tag(sent) for sent in words]
+            all_pos.append(part_speach)
+        return all_pos
+
+#################################################################Grouping(gset)
+def gset(data):
+  k=0
+  for i in data["evaluate"]:
+      if i=="help":
+          helptext.append([data.at[k,"reviewText"]])
+      else:
+          nonhelptext.append([data.at[k,"reviewText"]])
+      k=k+1
+  return helptext, nonhelptext
+#################################################################  module – nltk.sentiment.vader
+def H(data):
+    sid = SentimentIntensityAnalyzer()
+    for i in data:
+            for j in i:
+                    ss = sid.polarity_scores(j)
+                    for k in ss:
+                        print("{0}: {1}, ".format(k,ss[k]), end="")
+                        print()
+#########################################################################################adj
+def adj(datalist):
+    adjective=[]
+    for i in datalist :
+        for j in i:
+            for k in j:
+                if k[1]=="JJ":
+                    adjective.append(k[0])
+    return adjective
+
+#######################################################################################
+path="D:\\Aalto\\user research\\3\\assignment3\\Patio_Lawn_and_Garden_5.json"
+data=pd.read_json(path, orient="records",lines=True)
+print(data.columns.values)
+print(data.describe())
+j=0
+k=0
+for i in data["reviewText"]:
+    data.at[k,"ReviewSize"]=len(i)
+    k=k+1
+for i in data.helpful:
+    if i[1] != 0 and (i[0]/i[1]) * 100 >= 50:
+        data.at[j,"evaluate"]="help"
+    elif  i[1]==0 and i[1] !=0 :
+        data.at[j,"evaluate"]="nonhelp"
+    else:
+        data.at[j,"evaluate"]="nonhelp"
+    j=j+1
+
+helpText,nonhelpText= gset(data)
+
+ppos=(T(helpText[:100]))# tokens of positive sentences
+npos=(T(nonhelpText[:100])) #tokens of negative sentences
+
+print(set(adj(ppos)))
+print(len(set(adj(ppos))))
+print((set(adj(npos))))
+print(len(set(adj(npos))))
+print(H(helpText))
+print(H(nonhelpText))
